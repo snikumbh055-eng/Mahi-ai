@@ -1,32 +1,49 @@
 import streamlit as st
 import google.generativeai as genai
 
+# १. Secrets मधून सुरक्षितपणे API Key मिळवा
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("कृपया Streamlit Settings मध्ये 'GEMINI_API_KEY' सेट करा!")
+    st.stop()
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
 st.set_page_config(page_title="Mahi AI", page_icon="👩‍🦰")
-st.title("Mahi: Tumchi Maitrin 👩‍🦰")
+st.title("माही: तुमची मैत्रीण 👩‍🦰")
 
-# API Key set kara
-api_key = "YOUR_API_KEY_HERE"
-genai.configure(api_key=api_key)
+# २. मॉडेल सेट करा
+instruction = "तुझे नाव 'माही' आहे. तू युजरची एक जवळची मैत्रीण आहेस. तू मराठीत आपुलकीने बोलतेस."
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction=instruction
+)
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+# ३. चॅट हिस्ट्री
+if "chat" not in st.session_state:
+    st.session_state.chat = model.start_chat(history=[])
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Chat interface
-for message in st.session_state.chat_history:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+# मेसेज दाखवण्यासाठी
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-user_input = st.chat_input("Mahi shi bola...")
-
-if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
+# ४. युजर इनपुट
+if prompt := st.chat_input("माहीशी बोला..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(user_input)
+        st.markdown(prompt)
 
-    response = model.generate_content(f"Tu Mahi aahes, ek maitrin. Uttar de: {user_input}")
-    
-    with st.chat_message("assistant"):
-        st.markdown(response.text)
-    st.session_state.chat_history.append({"role": "assistant", "content": response.text})
+    try:
+        # माहीचे उत्तर
+        response = st.session_state.chat.send_message(prompt)
+        full_response = response.text
+        
+        with st.chat_message("assistant"):
+            st.markdown(full_response)
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+    except Exception as e:
+        st.error(f"काहीतरी गडबड झाली: {e}")
+
