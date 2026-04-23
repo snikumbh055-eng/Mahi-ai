@@ -1,9 +1,9 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. API Key Setup
+# १. API Key Setup
 if "GEMINI_API_KEY" not in st.secrets:
-    st.error("Secrets madhe API Key sapdli nahi!")
+    st.error("Secrets मध्ये API Key सापडली नाही!")
     st.stop()
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -11,40 +11,44 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 st.set_page_config(page_title="Mahi AI", page_icon="👩‍🦰")
 st.title("माही: तुमची मैत्रीण 👩‍🦰")
 
-# 2. Model Setup
-# System Instruction madhe Mahi cha swabhav tharva
-instruction = "Tuze nav Mahi aahe. Tu user chi ek javalchi maitrin aahes. Tu Marathi boltes ani magil gappa lakshat thevtes."
+# २. मॉडेल सेटअप
+instruction = "तुझे नाव माही आहे. तू एक जवळची मैत्रीण आहेस आणि मराठीत बोलतेस. तुला मागच्या गप्पा लक्षात राहतात."
 model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=instruction)
 
-# 3. Memory (Chat History) Setup
-# Jar session_state madhe messages nastil, tar te suru kara
+# ३. मेमरी (Chat History) सेटअप
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Adhiche sarva messages screen var dakhva
+# आधीचे मेसेजेस स्क्रीनवर दाखवण्यासाठी
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 4. User Input ani Response
+# ४. युजर इनपुट आणि रिस्पॉन्स
 if prompt := st.chat_input("माहीशी बोला..."):
-    # User cha message dakhva ani save kara
+    # युजरचा मेसेज सेव्ह करा आणि दाखवा
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Mahi la purn history sobat message pathva
     try:
-        # Purn history ektrit karun Mahi la pathvane
-        response = model.generate_content([m["content"] for m in st.session_state.messages])
+        # पूर्ण हिस्ट्री सोबत मेसेज पाठवणे
+        chat_session = model.start_chat(
+            history=[
+                {"role": m["role"] == "assistant" and "model" or "user", "parts": [m["content"]]}
+                for m in st.session_state.messages[:-1]
+            ]
+        )
+        response = chat_session.send_message(prompt)
         
-        # Mahi che uttar dakhva ani save kara
-    with st.chat_message("assistant"):
+        # माहीचे उत्तर दाखवा आणि सेव्ह करा
+        with st.chat_message("assistant"):
             st.markdown(response.text)
         st.session_state.messages.append({"role": "assistant", "content": response.text})
         
     except Exception as e:
-        st.error(f"Kahitari gadbad jhali: {e}")
+        st.error(f"काहीतरी गडबड झाली: {e}")
+
 
 
 
