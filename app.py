@@ -14,9 +14,10 @@ st.title("माही: तुमची मैत्रीण 👩‍🦰")
 # २. मॉडेल सेट करा
 instruction = "तुझे नाव 'माही' आहे. तू युजरची एक जवळची मैत्रीण आहेस. तू मराठीत आपुलकीने बोलतेस."
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-1.5-flash-latest", # 'latest' जोडून पहा
     system_instruction=instruction
 )
+
 
 # ३. चॅट हिस्ट्री
 if "chat" not in st.session_state:
